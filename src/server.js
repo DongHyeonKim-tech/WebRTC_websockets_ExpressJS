@@ -1,6 +1,7 @@
 import express from "express";
 import http from "http";
-import WebSocket from "ws";
+import SocketIO from "socket.io";
+
 // Backend
 const app = express();
 
@@ -16,47 +17,28 @@ app.use("/public", express.static(__dirname + "/public"));
 app.get('/', (req, res) => res.render("home"));
 
 // 다른 url 이동 시, home으로 이동
-// app.get("/*", (req, res) => res.redirect("/"));
-app.get("/*", (req, res) => req.params["0"] === "home" ? res.redirect("/public/js/app.js") : res.redirect("/"))
+app.get("/*", (req, res) => res.redirect("/"));
+// app.get("/*", (req, res) => req.params["0"] === "home" ? res.redirect("/socket.io/socket.io.js") : res.redirect("/"))
 
-const handleListen = () => console.log("Listening on http://localhost:3000");
-//// Express, http server 사용
-// app.listen(3000, handleListen);
 
-//// Websocket
 // server 생성
 const server = http.createServer(app);
-// http와 ws 동시 사용 가능
-const wss = new WebSocket.Server({ server });
-// ws만 사용
-// const wss = new WebSocket.Server();
 
-// 각 browser socket 임시 보관
-const sockets = [];
+const wsServer = SocketIO(server);
 
-wss.on("connection", (socket) => {
-  sockets.push(socket);
-  socket.nickname = "Anon";
-  // Front와 Connection 시, server에 log
-  console.log("Connected to Browser");
-  // Browser 끌 시 작동
-  socket.on("close", () => console.log("Disconnected from the Browser"));
-  // Front에서 message receive
-  socket.on("message", (message) => {
-    const msg = JSON.parse(message.toString('utf8'));
-    // 각 browser의 socket에 message send
-    switch (msg.type) {
-      case "new_message":
-        sockets.forEach((aSocket) => aSocket.send(`${socket.nickname}: ${msg.payload}`));
-        break;
-      case "nickname":
-        socket.nickname = msg.payload;
-        console.log(`${socket.nickname}`);
-        break;
-    }
-  })
-  // Front로 message send
-  socket.send("hello!!");
-})
+const backendDone = (msg) => {
+  console.log("Backend done: " + msg);
+}
 
-server.listen(3000, handleListen);
+wsServer.on("connection", (socket) => {
+  
+  socket.on("enter_room", (msg, done) => {
+    console.log(msg.payload);
+    setTimeout(() => {
+      done("hello from backend");
+    }, 5000);
+  });
+
+});
+
+server.listen(3000);
