@@ -1,4 +1,6 @@
 import express from "express";
+import http from "http";
+import WebSocket from "ws";
 // Backend
 const app = express();
 
@@ -14,7 +16,33 @@ app.use("/public", express.static(__dirname + "/public"));
 app.get('/', (req, res) => res.render("home"));
 
 // 다른 url 이동 시, home으로 이동
-app.get("/*", (req, res) => res.redirect("/"));
+// app.get("/*", (req, res) => res.redirect("/"));
+app.get("/*", (req, res) => req.params["0"] === "home" ? res.redirect("/public/js/app.js") : res.redirect("/"))
 
 const handleListen = () => console.log("Listening on http://localhost:3000");
-app.listen(3000, handleListen);
+//// Express, http server 사용
+// app.listen(3000, handleListen);
+
+//// Websocket
+// server 생성
+const server = http.createServer(app);
+// http와 ws 동시 사용 가능
+const wss = new WebSocket.Server({ server });
+// ws만 사용
+// const wss = new WebSocket.Server();
+
+
+wss.on("connection", (socket) => {
+  // Front와 Connection 시, server에 log
+  console.log("Connected to Browser");
+  // Browser 끌 시 작동
+  socket.on("close", () => console.log("Disconnected from the Browser"));
+  // Front에서 message receive
+  socket.on("message", (message) => {
+    console.log(message.toString('utf8'));
+  });
+  // Front로 message send
+  socket.send("hello!!");
+})
+
+server.listen(3000, handleListen);
