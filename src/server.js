@@ -31,16 +31,30 @@ const wss = new WebSocket.Server({ server });
 // ws만 사용
 // const wss = new WebSocket.Server();
 
+// 각 browser socket 임시 보관
+const sockets = [];
 
 wss.on("connection", (socket) => {
+  sockets.push(socket);
+  socket.nickname = "Anon";
   // Front와 Connection 시, server에 log
   console.log("Connected to Browser");
   // Browser 끌 시 작동
   socket.on("close", () => console.log("Disconnected from the Browser"));
   // Front에서 message receive
   socket.on("message", (message) => {
-    console.log(message.toString('utf8'));
-  });
+    const msg = JSON.parse(message.toString('utf8'));
+    // 각 browser의 socket에 message send
+    switch (msg.type) {
+      case "new_message":
+        sockets.forEach((aSocket) => aSocket.send(`${socket.nickname}: ${msg.payload}`));
+        break;
+      case "nickname":
+        socket.nickname = msg.payload;
+        console.log(`${socket.nickname}`);
+        break;
+    }
+  })
   // Front로 message send
   socket.send("hello!!");
 })
