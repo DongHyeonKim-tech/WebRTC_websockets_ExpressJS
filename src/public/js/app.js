@@ -31,9 +31,11 @@ const addMessage = (message) => {
 const handleMessageSubmit = (event) => {
   event.preventDefault();
   const input = roomChatForm.querySelector("input");
-  socket.emit("new_message", input.value, roomName, () => {
-    addMessage(`You: ${input.value}`);
+  const value = input.value;
+  socket.emit("new_message", value, roomName, () => {
+    addMessage(`You: ${value}`);
   });
+  input.value = "";
 };
 // receive message
 socket.on("new_message", addMessage);
