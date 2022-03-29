@@ -26,19 +26,26 @@ const server = http.createServer(app);
 
 const wsServer = SocketIO(server);
 
-const backendDone = (msg) => {
-  console.log("Backend done: " + msg);
-}
-
 wsServer.on("connection", (socket) => {
-  
-  socket.on("enter_room", (msg, done) => {
-    console.log(msg.payload);
-    setTimeout(() => {
-      done("hello from backend");
-    }, 5000);
+  socket.onAny((event) => {
+    console.log(`Socket Event: ${event}`);
+  })
+  socket.on("enter_room", (roomName, showRoom) => {
+    // chat room에 socket.id를 join
+    socket.join(roomName);
+    console.log(socket.rooms)
+    showRoom();
+    socket.to(roomName).emit("welcome");
   });
-
+  socket.on("disconnecting", () => {
+    socket.rooms.forEach((room) => socket.to(room).emit("bye"));
+  });
+  socket.on("new_message", (chat, room, done) => {
+    console.log(`${room} - ${chat}`);
+    // socket.to(roomName).emit(chat);
+    socket.to(room).emit("new_message", chat);
+    done();
+  });
 });
 
 server.listen(3000);
